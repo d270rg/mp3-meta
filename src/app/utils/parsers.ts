@@ -1,15 +1,36 @@
 //Primitive types
+enum dynamicFormat {
+  Hex = 'hex',
+  Bytes = 'bytes',
+  Bits = 'bits',
+  Number = 'number',
+  SyncedNumber = 'syncedNumber',
+  String = 'string',
+  FilteredString = 'filteredString',
+  Dynamic = 'dynamic',
+}
+enum subdivisionsFormat {
+  Defined = 'defined',
+  Terminated = 'terminated',
+  Textfield = 'textfield',
+  Table = 'table',
+  List = 'list',
+}
+type parsedValue = number | string | string[] | number[] | ListEntry;
 interface ListEntry {
   [key: string]: {
-    value: number | string | string[] | number[];
-    parseTo: string; //'hex'|'bytes'|'bits'|'syncedNumber'|'string'
+    value: parsedValue;
+    parseTo: string;
   };
 }
 //--Main headers schema--
 interface SchemaEntry {
   size: number; //size in bytes
   data: {
-    [title: string]: number;
+    [title: string]: {
+      parseTo: string;
+      size: number;
+    };
   };
 }
 //-parsed-
@@ -17,7 +38,10 @@ interface parsedSchemaEntry {
   size: number; //size in bytes
   headPosition: number;
   data: {
-    [title: string]: number | string[];
+    [title: string]: {
+      format: string;
+      payload: parsedValue;
+    };
   };
 }
 //--
@@ -30,7 +54,8 @@ interface frameTagHeader {
   flags: number;
 }
 interface frameTagSubdivision {
-  type: string; //'terminated' | 'defined' | 'textfield' | 'table';
+  type: string;
+  parseTo?: string; //for 'defined'
   terminator?: string; //for 'terminated'
   size?: number; //for 'defined'
   //for 'table'
@@ -60,13 +85,12 @@ interface parsedFrameTagHeader {
   size: number;
   flags: string[];
 }
-type parsedFrameTagSubdivision =
-  | string
-  | string[]
-  | number
-  | number[]
-  | ListEntry;
+interface parsedFrameTagSubdivision {
+  format: string;
+  payload: parsedValue;
+}
 interface parsedTag {
+  findAt: number;
   header: parsedFrameTagHeader;
   data: {
     [tagSubdivision: string]: parsedFrameTagSubdivision;
@@ -105,7 +129,7 @@ export class ByteParser {
         console.log('V2 detected');
         let parsedTable = this.tableParse(arrayBuffer, schema.table, 0);
         console.log(parsedTable);
-        let parsedFrames = this.frameParse(
+        let parsedFrames = this.frameSearchParse(
           arrayBuffer,
           schema.frames,
           parsedTable.headPosition,
@@ -135,23 +159,30 @@ export class ByteParser {
     };
     let headPosition = start;
     Object.keys(tableStructure.data).forEach((key) => {
-      parsedResult.data[key] = this.bin2Base2(
+      let parsedTableEntry = {
+        format: 'Bytes',
+        payload: <parsedValue>'',
+      };
+      parsedTableEntry.format = <dynamicFormat>tableStructure.data[key].parseTo;
+      parsedTableEntry.payload = this.dynamicConvert(
         this.rangeParse(
           buffer,
           headPosition,
-          headPosition + tableStructure.data[key]
-        )
+          headPosition + tableStructure.data[key].size
+        ),
+        tableStructure.data[key].parseTo
       );
-      headPosition += tableStructure.data[key];
+      parsedResult.data[key] = parsedTableEntry;
+      headPosition += tableStructure.data[key].size;
     });
     //<string>Size field required for size calculation
     let ID3v2HeaderSize = 10;
     parsedResult.size =
-      this.calcTagSize(<string[]>parsedResult.data['Size']) - ID3v2HeaderSize;
+      <number>parsedResult.data['Size'].payload - ID3v2HeaderSize;
     parsedResult.headPosition = headPosition;
     return parsedResult;
   }
-  private frameParse(
+  private LEGACY_frameParse(
     buffer: ArrayBuffer,
     frames: SchemaFrameEntry,
     start: number,
@@ -159,10 +190,11 @@ export class ByteParser {
   ): parsedSchemaFrameEntry {
     let headPosition = start;
     let parsedResult: parsedSchemaFrameEntry = {};
-
+    let failCount = 0;
     //Iteration over frames, limited by overall frame section size
     while (headPosition < end) {
       let parsedTag: parsedTag = {
+        findAt: headPosition,
         header: {
           marker: '',
           size: 0,
@@ -203,16 +235,23 @@ export class ByteParser {
 
       let innerHeadPosition = parsedTag.header.size; //As we now know frame size, we can countdown it
       let frameSchema = frames.tags[parsedTag.header.marker];
+      if (failCount > 3) {
+        console.log('Failed to parse further');
+        return parsedResult;
+      }
       if (frameSchema) {
         Object.keys(frameSchema.data).forEach((subdivision) => {
           switch (frameSchema.data[subdivision].type) {
             case 'defined': {
-              parsedTag.data[subdivision] = this.bin2Hex(
+              parsedTag.data[subdivision].format =
+                frameSchema.data[subdivision].parseTo!;
+              parsedTag.data[subdivision].payload = this.dynamicConvert(
                 this.rangeParse(
                   buffer,
                   headPosition,
                   headPosition + <number>frameSchema.data[subdivision].size
-                )
+                ),
+                frameSchema.data[subdivision].parseTo!
               );
               console.log(
                 'defined result',
@@ -231,7 +270,8 @@ export class ByteParser {
                 headPosition
               );
               let terminatedText = this.bin2String(terminatedTextInBytes);
-              parsedTag.data[subdivision] = terminatedText;
+              parsedTag.data[subdivision].format = dynamicFormat.String;
+              parsedTag.data[subdivision].payload = terminatedText;
               console.log(
                 'terminated text result',
                 'of subdivision',
@@ -268,7 +308,8 @@ export class ByteParser {
                 'size',
                 tableSize
               );
-              parsedTag.data[subdivision] = this.bin2Hex(
+              parsedTag.data[subdivision].format = dynamicFormat.Dynamic;
+              parsedTag.data[subdivision].payload = this.bin2Hex(
                 this.rangeParse(buffer, headPosition, headPosition + tableSize)
               );
 
@@ -302,44 +343,21 @@ export class ByteParser {
                       frameSchema.data[subdivision].structure![
                         structureEntry
                       ].parseTo;
-                    switch (parsedStructure[structureEntry].parseTo) {
-                      case 'hex': {
-                        parsedStructure[structureEntry].value =
-                          this.bin2Hex(value);
-                        return;
-                      }
-                      case 'bytes': {
-                        parsedStructure[structureEntry].value = value;
-                        return;
-                      }
-                      case 'bits': {
-                        parsedStructure[structureEntry].value =
-                          this.bin2Base2(value);
-                        return;
-                      }
-                      case 'syncedNumber': {
-                        parsedStructure[structureEntry].value =
-                          this.calcTagSize(this.bin2Base2(value));
-                        return;
-                      }
-                      case 'string': {
-                        parsedStructure[structureEntry].value =
-                          this.bin2String(value);
-                        return;
-                      }
-                      default: {
-                        parsedStructure[structureEntry].value = value;
-                      }
-                    }
+                    parsedStructure[structureEntry].value = this.dynamicConvert(
+                      value,
+                      parsedStructure[structureEntry].parseTo
+                    );
                   }
                 );
                 console.log('parsedStructure', parsedStructure);
-                parsedTag.data[subdivision] = parsedStructure;
+                parsedTag.data[subdivision].format = dynamicFormat.Dynamic;
+                parsedTag.data[subdivision].payload = parsedStructure;
               }
               return;
             }
             case 'textfield': {
-              parsedTag.data[subdivision] = this.bin2String(
+              parsedTag.data[subdivision].format = dynamicFormat.String;
+              parsedTag.data[subdivision].payload = this.bin2String(
                 this.rangeParse(
                   buffer,
                   headPosition,
@@ -368,13 +386,243 @@ export class ByteParser {
           'from',
           frames.tags
         );
+        failCount++;
       }
     }
     console.log('final parsed result', parsedResult);
     return parsedResult;
   }
+  private frameSearchParse(
+    buffer: ArrayBuffer,
+    frames: SchemaFrameEntry,
+    start: number,
+    end: number
+  ): parsedSchemaFrameEntry {
+    //Alternative frame parser; More reliable, but much slower
+    let framesPiece = this.rangeParse(buffer, start, end);
+    let textFramesPiece = this.bin2String(framesPiece);
+    console.log(textFramesPiece);
+    let parsedResult: parsedSchemaFrameEntry = {};
+    Object.keys(frames.tags).forEach((frameType) => {
+      let tagPos = textFramesPiece.indexOf(frameType);
+      if (tagPos !== -1) {
+        console.log('tag', frameType, 'found at', start + tagPos);
+        let headPosition = start + tagPos;
+        let parsedTag: parsedTag = {
+          findAt: start + tagPos,
+          header: {
+            marker: '',
+            size: 0,
+            flags: [],
+          },
+          data: {},
+        };
+        parsedTag.header.marker = this.bin2String(
+          this.rangeParse(
+            buffer,
+            headPosition,
+            headPosition + frames.header.marker
+          )
+        );
+        headPosition += frames.header.marker;
+        console.log('Frame marker', parsedTag.header.marker);
+
+        parsedTag.header.size = this.calcTagSize(
+          this.bin2Base2(
+            this.rangeParse(
+              buffer,
+              headPosition,
+              headPosition + frames.header.size
+            )
+          )
+        );
+        headPosition += frames.header.size;
+
+        parsedTag.header.flags = [
+          ...this.bin2Base2(
+            this.rangeParse(
+              buffer,
+              headPosition,
+              headPosition + frames.header.flags
+            )
+          ),
+        ];
+        headPosition += frames.header.flags;
+
+        let innerHeadPosition = parsedTag.header.size; //As we now know frame size, we can countdown it
+        let frameSchema = frames.tags[parsedTag.header.marker];
+        if (frameSchema) {
+          Object.keys(frameSchema.data).forEach((subdivision) => {
+            let parsedTableEntry = {
+              format: 'Bytes',
+              payload: <parsedValue>'',
+            };
+            switch (frameSchema.data[subdivision].type) {
+              case 'defined': {
+                parsedTableEntry.format =
+                  frameSchema.data[subdivision].parseTo!;
+                parsedTableEntry.payload = this.dynamicConvert(
+                  this.rangeParse(
+                    buffer,
+                    headPosition,
+                    headPosition + <number>frameSchema.data[subdivision].size
+                  ),
+                  frameSchema.data[subdivision].parseTo!
+                );
+                console.log(
+                  'defined result',
+                  'of subdivision',
+                  subdivision,
+                  ':',
+                  parsedTableEntry
+                );
+                headPosition += <number>frameSchema.data[subdivision].size;
+                innerHeadPosition -= <number>frameSchema.data[subdivision].size;
+                break;
+              }
+              case 'terminated': {
+                let terminatedTextInBytes = this.readUntilHexSymbol(
+                  buffer,
+                  headPosition
+                );
+                let terminatedText = this.bin2FilteredString(
+                  terminatedTextInBytes
+                );
+                parsedTableEntry.format = dynamicFormat.String;
+                parsedTableEntry.payload = terminatedText;
+                console.log(
+                  'terminated text result',
+                  'of subdivision',
+                  subdivision,
+                  ':',
+                  parsedTableEntry
+                );
+                headPosition += terminatedTextInBytes.length;
+                innerHeadPosition -= terminatedTextInBytes.length;
+                break;
+              }
+              case 'table': {
+                let headerBytes = this.bin2Base2(
+                  this.rangeParse(
+                    buffer,
+                    headPosition,
+                    headPosition +
+                      <number>frameSchema.data[subdivision].headerBytes
+                  )
+                );
+
+                headPosition += <number>(
+                  frameSchema.data[subdivision].headerBytes
+                );
+                innerHeadPosition -= <number>(
+                  frameSchema.data[subdivision].headerBytes
+                );
+
+                console.log('table header bytes', headerBytes);
+                let tableFlags = headerBytes[0];
+                headerBytes.shift();
+                let tableSize = this.calcTagSize(headerBytes);
+                console.log(
+                  'calculated table header',
+                  tableFlags,
+                  'size',
+                  tableSize
+                );
+                parsedTableEntry.format = dynamicFormat.Dynamic;
+                parsedTableEntry.payload = this.bin2Hex(
+                  this.rangeParse(
+                    buffer,
+                    headPosition,
+                    headPosition + tableSize
+                  )
+                );
+
+                innerHeadPosition -= tableSize;
+                headPosition += tableSize;
+
+                console.log(
+                  'table result',
+                  'of subdivision',
+                  subdivision,
+                  ':',
+                  parsedTableEntry
+                );
+                break;
+              }
+
+              //Always last - countdown to the end of InnerHeadPosition
+              case 'list': {
+                while (innerHeadPosition > 0) {
+                  let parsedStructure: ListEntry = {};
+                  Object.keys(frameSchema.data[subdivision].structure!).forEach(
+                    (structureEntry) => {
+                      let value = this.rangeParse(
+                        buffer,
+                        headPosition,
+                        headPosition +
+                          frameSchema.data[subdivision].structure![
+                            structureEntry
+                          ].size
+                      );
+                      parsedStructure[structureEntry].parseTo =
+                        frameSchema.data[subdivision].structure![
+                          structureEntry
+                        ].parseTo;
+                      parsedStructure[structureEntry].value =
+                        this.dynamicConvert(
+                          value,
+                          parsedStructure[structureEntry].parseTo
+                        );
+                    }
+                  );
+                  console.log('parsedStructure', parsedStructure);
+                  parsedTableEntry.format = dynamicFormat.Dynamic;
+                  parsedTableEntry.payload = parsedStructure;
+                }
+                break;
+              }
+              case 'textfield': {
+                parsedTableEntry.format = dynamicFormat.String;
+                parsedTableEntry.payload = this.bin2FilteredString(
+                  this.rangeParse(
+                    buffer,
+                    headPosition,
+                    headPosition + innerHeadPosition
+                  )
+                );
+                headPosition += innerHeadPosition;
+                console.log(
+                  'textfield result',
+                  'of subdivision',
+                  subdivision,
+                  ':',
+                  parsedTableEntry
+                );
+                break;
+              }
+            }
+            parsedTag.data[subdivision] = parsedTableEntry;
+          });
+          parsedResult[parsedTag.header.marker] = parsedTag;
+        } else {
+          console.log(
+            'Schema named',
+            parsedTag.header.marker,
+            'not recognized:',
+            frameSchema,
+            'from',
+            frames.tags
+          );
+        }
+      }
+    });
+    return parsedResult;
+  }
 
   //Util methods
+  public filterString(string: string): string {
+    return string.replace(/[^\x20-\x7E]/g, '');
+  }
   public calcTagSize(sizeBytes: string[]): number {
     //Calculates ID3v2 tag size by 4 size bytes
     let cuttedBytes = sizeBytes.map((sizeByte) => {
@@ -408,26 +656,70 @@ export class ByteParser {
   }
 
   //Util converters
-  private bin2Base2(array: Array<number>): Array<string> {
-    return Array.from(array, function (byte) {
+  private dynamicConvert(
+    uint8Array: number[],
+    parseTo: string
+  ): Array<string> | Array<number> | string | number {
+    switch (parseTo) {
+      case dynamicFormat.Hex: {
+        return this.bin2Hex(uint8Array);
+      }
+      case dynamicFormat.Bytes: {
+        return uint8Array;
+      }
+      case dynamicFormat.Bits: {
+        return this.bin2Base2(uint8Array);
+      }
+      case dynamicFormat.SyncedNumber: {
+        return this.calcTagSize(this.bin2Base2(uint8Array));
+      }
+      case dynamicFormat.String: {
+        return this.bin2String(uint8Array);
+      }
+      case dynamicFormat.FilteredString: {
+        return this.bin2FilteredString(uint8Array);
+      }
+      case dynamicFormat.Number: {
+        return this.bin2Number(uint8Array);
+      }
+      default: {
+        console.log('Unknown dynamic parse format requested', parseTo);
+        return uint8Array;
+      }
+    }
+  }
+  private bin2Base2(uint8Arr: Array<number>): Array<string> {
+    return Array.from(uint8Arr, function (byte) {
       let base2value = byte.toString(2);
       //fill rest space with 0 for consistent formatting
       return '0'.repeat(8 - base2value.length).concat(base2value);
     });
   }
-  private bin2Hex(byteArray: Array<number>): Array<string> {
-    return Array.from(byteArray, function (byte) {
+  private bin2Hex(uint8Arr: Array<number>): Array<string> {
+    return Array.from(uint8Arr, function (byte) {
       return ('0' + (byte & 0xff).toString(16)).slice(-2);
     });
   }
-  private bin2String(array: Array<number>) {
+  private bin2String(uint8Arr: Array<number>) {
     var result = '';
-    for (var i = 0; i < array.length; i++) {
-      result += String.fromCharCode(array[i]);
+    for (var i = 0; i < uint8Arr.length; i++) {
+      result += String.fromCharCode(uint8Arr[i]);
     }
     return result;
   }
-
+  private bin2FilteredString(uint8Arr: Array<number>) {
+    return this.filterString(this.bin2String(uint8Arr));
+  }
+  private bin2Number(uint8Arr: Array<number>) {
+    let result = '';
+    let bits = this.bin2Base2(uint8Arr);
+    console.log('bin2Number:', bits);
+    for (let i = 0; i < bits.length; i++) {
+      result = result.concat(bits[i]);
+    }
+    console.log('result', result);
+    return parseInt(result, 2);
+  }
   //Data readers
   private getContents(
     buffer: ArrayBuffer,

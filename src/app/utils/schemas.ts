@@ -1,125 +1,27 @@
-// export const ID3v2_2 = {
-//   table: {
-//     size: 10,
-//     data: {
-//       Marker: 3,
-//       Version: 2,
-//       Tag: 1,
-//       Size: 4,
-//     },
-//   },
-//   extendedTags: {
-//     header: {
-//       marker: 3,
-//       size: 3,
-//     },
-//     tags: {
-//       FileIdentifier: {
-//         alias: ['UFI'],
-//         data: {
-//           OwnerID: {
-//             type: 'terminated',
-//             terminator: '00',
-//           },
-//           Identifier: {
-//             type: 'textfield',
-//           },
-//         },
-//       },
-//     },
-//     TextInfo: {
-//       alias: [
-//         'T00',
-//         'TT1',
-//         'TT2',
-//         'TT3',
-//         'TP1',
-//         'TP2',
-//         'TP3',
-//         'TP4',
-//         'TCM',
-//         'TXT',
-//         'TLA',
-//         'TCO',
-//         'TAL',
-//         'TPA',
-//         'TRK',
-//         'TRC',
-//         'TYE',
-//         'TDA',
-//         'TIM',
-//         'TRD',
-//         'TMT',
-//         'TBP',
-//         'BPM ',
-//         'TCR',
-//         'TPB',
-//         'TEN',
-//         'TSS',
-//         'TOF',
-//         'TLE',
-//         'TSI',
-//         'TDY',
-//         'TKE',
-//         'TOT',
-//         'TOA',
-//         'TOL',
-//         'TOR',
-//       ],
-//       data: {
-//         TextEncoding: {
-//           type: 'defined',
-//           size: 1,
-//         },
-//         Information: {
-//           type: 'textfield',
-//         },
-//       },
-//     },
-//     CustomTextInfo: {
-//       alias: ['TXX'],
-//       data: {
-//         TextEncoding: {
-//           type: 'defined',
-//           size: 1,
-//         },
-//         Description: {
-//           type: 'terminated',
-//           terminator: '00',
-//         },
-//         Value: {
-//           type: 'textfield',
-//         },
-//       },
-//     },
-//   },
-//   frames: {
-//     size: 4,
-//     data: {
-//       Marker: 10,
-//       MPEG: 2,
-//       LayerIndex: 2,
-//       ProtectionBit: 1,
-//       BitrateIndex: 4,
-//       FrequencyIndex: 2,
-//       PaddingBit: 1,
-//       PrivateBit: 1,
-//       ChannelModeIndex: 2,
-//       JointStereoModeExtension: 2,
-//       Copyright: 1,
-//       Original: 1,
-//       Accent: 2,
-//     },
-//   },
-// };
 export const ID3v2_4 = {
   table: {
     size: 10,
     data: {
-      Marker: 3,
-      Version: 2,
-      Tag: 1,
-      Size: 4,
+      Marker: {
+        parseTo: 'filteredString',
+        size: 3,
+      },
+      Version: {
+        parseTo: 'number',
+        size: 1,
+      },
+      Subversion: {
+        parseTo: 'number',
+        size: 1,
+      },
+      Tag: {
+        parseTo: 'bits',
+        size: 1,
+      },
+      Size: {
+        parseTo: 'syncedNumber',
+        size: 4,
+      },
     },
   },
   frames: {
@@ -144,6 +46,7 @@ export const ID3v2_4 = {
         data: {
           TextEncoding: {
             type: 'defined',
+            parseTo: 'hex',
             size: 1,
           },
           Information: {
@@ -155,6 +58,7 @@ export const ID3v2_4 = {
         data: {
           TextEncoding: {
             type: 'defined',
+            parseTo: 'hex',
             size: 1,
           },
           Information: {
@@ -166,6 +70,7 @@ export const ID3v2_4 = {
         data: {
           TextEncoding: {
             type: 'defined',
+            parseTo: 'hex',
             size: 1,
           },
           Information: {
@@ -177,6 +82,7 @@ export const ID3v2_4 = {
         data: {
           TextEncoding: {
             type: 'defined',
+            parseTo: 'hex',
             size: 1,
           },
           Information: {
@@ -188,6 +94,7 @@ export const ID3v2_4 = {
         data: {
           TextEncoding: {
             type: 'defined',
+            parseTo: 'hex',
             size: 1,
           },
           Information: {
@@ -199,6 +106,7 @@ export const ID3v2_4 = {
         data: {
           TextEncoding: {
             type: 'defined',
+            parseTo: 'hex',
             size: 1,
           },
           Information: {
@@ -210,6 +118,7 @@ export const ID3v2_4 = {
         data: {
           TextEncoding: {
             type: 'defined',
+            parseTo: 'hex',
             size: 1,
           },
           Information: {
@@ -221,6 +130,7 @@ export const ID3v2_4 = {
         data: {
           TextEncoding: {
             type: 'defined',
+            parseTo: 'hex',
             size: 1,
           },
           Information: {
@@ -232,6 +142,7 @@ export const ID3v2_4 = {
         data: {
           TextEncoding: {
             type: 'defined',
+            parseTo: 'hex',
             size: 1,
           },
           Information: {
@@ -243,6 +154,7 @@ export const ID3v2_4 = {
         data: {
           TextEncoding: {
             type: 'defined',
+            parseTo: 'hex',
             size: 1,
           },
           Information: {
@@ -254,6 +166,7 @@ export const ID3v2_4 = {
         data: {
           TextEncoding: {
             type: 'defined',
+            parseTo: 'hex',
             size: 1,
           },
           Information: {
@@ -265,6 +178,7 @@ export const ID3v2_4 = {
         data: {
           TextEncoding: {
             type: 'defined',
+            parseTo: 'hex',
             size: 1,
           },
           Information: {
@@ -276,6 +190,7 @@ export const ID3v2_4 = {
         data: {
           TextEncoding: {
             type: 'defined',
+            parseTo: 'hex',
             size: 1,
           },
           Information: {
@@ -287,6 +202,7 @@ export const ID3v2_4 = {
         data: {
           TextEncoding: {
             type: 'defined',
+            parseTo: 'hex',
             size: 1,
           },
           Information: {
@@ -298,6 +214,7 @@ export const ID3v2_4 = {
         data: {
           TextEncoding: {
             type: 'defined',
+            parseTo: 'hex',
             size: 1,
           },
           Information: {
@@ -309,6 +226,7 @@ export const ID3v2_4 = {
         data: {
           TextEncoding: {
             type: 'defined',
+            parseTo: 'hex',
             size: 1,
           },
           Information: {
@@ -320,6 +238,7 @@ export const ID3v2_4 = {
         data: {
           TextEncoding: {
             type: 'defined',
+            parseTo: 'hex',
             size: 1,
           },
           Information: {
@@ -331,6 +250,7 @@ export const ID3v2_4 = {
         data: {
           TextEncoding: {
             type: 'defined',
+            parseTo: 'hex',
             size: 1,
           },
           Information: {
@@ -342,6 +262,7 @@ export const ID3v2_4 = {
         data: {
           TextEncoding: {
             type: 'defined',
+            parseTo: 'hex',
             size: 1,
           },
           Information: {
@@ -353,6 +274,7 @@ export const ID3v2_4 = {
         data: {
           TextEncoding: {
             type: 'defined',
+            parseTo: 'hex',
             size: 1,
           },
           Information: {
@@ -364,6 +286,7 @@ export const ID3v2_4 = {
         data: {
           TextEncoding: {
             type: 'defined',
+            parseTo: 'hex',
             size: 1,
           },
           Information: {
@@ -375,6 +298,7 @@ export const ID3v2_4 = {
         data: {
           TextEncoding: {
             type: 'defined',
+            parseTo: 'hex',
             size: 1,
           },
           Information: {
@@ -386,6 +310,7 @@ export const ID3v2_4 = {
         data: {
           TextEncoding: {
             type: 'defined',
+            parseTo: 'hex',
             size: 1,
           },
           Information: {
@@ -397,6 +322,7 @@ export const ID3v2_4 = {
         data: {
           TextEncoding: {
             type: 'defined',
+            parseTo: 'hex',
             size: 1,
           },
           Information: {
@@ -408,6 +334,7 @@ export const ID3v2_4 = {
         data: {
           TextEncoding: {
             type: 'defined',
+            parseTo: 'hex',
             size: 1,
           },
           Information: {
@@ -419,6 +346,7 @@ export const ID3v2_4 = {
         data: {
           TextEncoding: {
             type: 'defined',
+            parseTo: 'hex',
             size: 1,
           },
           Information: {
@@ -430,6 +358,7 @@ export const ID3v2_4 = {
         data: {
           TextEncoding: {
             type: 'defined',
+            parseTo: 'hex',
             size: 1,
           },
           Information: {
@@ -441,6 +370,7 @@ export const ID3v2_4 = {
         data: {
           TextEncoding: {
             type: 'defined',
+            parseTo: 'hex',
             size: 1,
           },
           Information: {
@@ -452,6 +382,7 @@ export const ID3v2_4 = {
         data: {
           TextEncoding: {
             type: 'defined',
+            parseTo: 'hex',
             size: 1,
           },
           Information: {
@@ -463,6 +394,7 @@ export const ID3v2_4 = {
         data: {
           TextEncoding: {
             type: 'defined',
+            parseTo: 'hex',
             size: 1,
           },
           Information: {
@@ -474,6 +406,7 @@ export const ID3v2_4 = {
         data: {
           TextEncoding: {
             type: 'defined',
+            parseTo: 'hex',
             size: 1,
           },
           Information: {
@@ -485,6 +418,7 @@ export const ID3v2_4 = {
         data: {
           TextEncoding: {
             type: 'defined',
+            parseTo: 'hex',
             size: 1,
           },
           Information: {
@@ -496,6 +430,7 @@ export const ID3v2_4 = {
         data: {
           TextEncoding: {
             type: 'defined',
+            parseTo: 'hex',
             size: 1,
           },
           Information: {
@@ -507,6 +442,7 @@ export const ID3v2_4 = {
         data: {
           TextEncoding: {
             type: 'defined',
+            parseTo: 'hex',
             size: 1,
           },
           Information: {
@@ -518,6 +454,7 @@ export const ID3v2_4 = {
         data: {
           TextEncoding: {
             type: 'defined',
+            parseTo: 'hex',
             size: 1,
           },
           Information: {
@@ -529,6 +466,7 @@ export const ID3v2_4 = {
         data: {
           TextEncoding: {
             type: 'defined',
+            parseTo: 'hex',
             size: 1,
           },
           Information: {
@@ -540,6 +478,7 @@ export const ID3v2_4 = {
         data: {
           TextEncoding: {
             type: 'defined',
+            parseTo: 'hex',
             size: 1,
           },
           Information: {
@@ -551,6 +490,7 @@ export const ID3v2_4 = {
         data: {
           TextEncoding: {
             type: 'defined',
+            parseTo: 'hex',
             size: 1,
           },
           Information: {
@@ -562,6 +502,7 @@ export const ID3v2_4 = {
         data: {
           TextEncoding: {
             type: 'defined',
+            parseTo: 'hex',
             size: 1,
           },
           Information: {
@@ -573,6 +514,7 @@ export const ID3v2_4 = {
         data: {
           TextEncoding: {
             type: 'defined',
+            parseTo: 'hex',
             size: 1,
           },
           Information: {
@@ -584,6 +526,7 @@ export const ID3v2_4 = {
         data: {
           TextEncoding: {
             type: 'defined',
+            parseTo: 'hex',
             size: 1,
           },
           Information: {
@@ -595,6 +538,7 @@ export const ID3v2_4 = {
         data: {
           TextEncoding: {
             type: 'defined',
+            parseTo: 'hex',
             size: 1,
           },
           Information: {
@@ -606,6 +550,7 @@ export const ID3v2_4 = {
         data: {
           TextEncoding: {
             type: 'defined',
+            parseTo: 'hex',
             size: 1,
           },
           Information: {
@@ -617,6 +562,7 @@ export const ID3v2_4 = {
         data: {
           TextEncoding: {
             type: 'defined',
+            parseTo: 'hex',
             size: 1,
           },
           Information: {
@@ -628,6 +574,7 @@ export const ID3v2_4 = {
         data: {
           TextEncoding: {
             type: 'defined',
+            parseTo: 'hex',
             size: 1,
           },
           Information: {
@@ -639,6 +586,7 @@ export const ID3v2_4 = {
         data: {
           TextEncoding: {
             type: 'defined',
+            parseTo: 'hex',
             size: 1,
           },
           Information: {
@@ -650,6 +598,7 @@ export const ID3v2_4 = {
         data: {
           TextEncoding: {
             type: 'defined',
+            parseTo: 'hex',
             size: 1,
           },
           Description: {
@@ -721,6 +670,7 @@ export const ID3v2_4 = {
         data: {
           TextEncoding: {
             type: 'defined',
+            parseTo: 'hex',
             size: 1,
           },
           Description: {
@@ -738,6 +688,40 @@ export const ID3v2_4 = {
             type: 'table',
             headerBytes: 4,
             rowSize: 8,
+            structure: {
+              TrackNumber: {
+                size: 1,
+                parseTo: 'syncedNumber',
+              },
+              MinutesStart: {
+                size: 1,
+                parseTo: 'syncedNumber',
+              },
+              SecondsStart: {
+                size: 1,
+                parseTo: 'syncedNumber',
+              },
+              FramesStart: {
+                size: 1,
+                parseTo: 'syncedNumber',
+              },
+              MinutesEnd: {
+                size: 1,
+                parseTo: 'syncedNumber',
+              },
+              SecondsEnd: {
+                size: 1,
+                parseTo: 'syncedNumber',
+              },
+              FramesEnd: {
+                size: 1,
+                parseTo: 'syncedNumber',
+              },
+              ReservedZeros: {
+                size: 1,
+                parseTo: 'hex',
+              },
+            },
           },
           LeadOut: {
             type: 'defined',
@@ -749,6 +733,7 @@ export const ID3v2_4 = {
         data: {
           TimeStampFormat: {
             type: 'defined',
+            parseTo: 'hex',
             size: 1,
           },
           Timestamps: {
@@ -770,10 +755,12 @@ export const ID3v2_4 = {
         data: {
           TextEncoding: {
             type: 'defined',
+            parseTo: 'hex',
             size: 1,
           },
           Language: {
             type: 'defined',
+            parseTo: 'filteredString',
             size: 3,
           },
           ShortDescription: {
