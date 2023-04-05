@@ -731,7 +731,7 @@ export const ID3v2_4 = {
       },
       ETCO: {
         data: {
-          TimeStampFormat: {
+          TimeStampFo0rmat: {
             type: 'defined',
             parseTo: 'hex',
             size: 1,
@@ -769,6 +769,46 @@ export const ID3v2_4 = {
           },
           Text: {
             type: 'textfield',
+          },
+        },
+      },
+      MLLT: {
+        data: {
+          MPEGFramesBetweenReference: {
+            type: 'defined',
+            parseTo: 'number',
+            size: 2,
+          },
+          BytesBetweenReference: {
+            type: 'defined',
+            parseTo: 'number',
+            size: 3,
+          },
+          MsBetweenReference: {
+            type: 'defined',
+            parseTo: 'number',
+            size: 3,
+          },
+          BitsForByteDeviation: {
+            type: 'defined',
+            parseTo: 'number',
+            size: 1,
+          },
+          BitsForMsDeviation: {
+            type: 'defined',
+            parseTo: 'number',
+            size: 1,
+          },
+          RefList: {
+            type: 'tableList',
+            refStructure: {
+              DeviationInBytes: {
+                sizeRef: 'BitsForByteDeviation',
+              },
+              DeviationInMs: {
+                sizeRef: 'BitsForMsDeviation',
+              },
+            },
           },
         },
       },
