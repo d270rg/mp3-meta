@@ -64,8 +64,7 @@ interface frameTagSubdivision {
   //for 'list'
   structure?: {
     [key: string]: {
-      size: number | string;
-      sizeInBits: boolean;
+      size: number;
       parseTo: string;
     };
   };
@@ -183,6 +182,216 @@ export class ByteParser {
     parsedResult.headPosition = headPosition;
     return parsedResult;
   }
+  private LEGACY_frameParse(
+    buffer: ArrayBuffer,
+    frames: SchemaFrameEntry,
+    start: number,
+    end: number
+  ): parsedSchemaFrameEntry {
+    let headPosition = start;
+    let parsedResult: parsedSchemaFrameEntry = {};
+    let failCount = 0;
+    //Iteration over frames, limited by overall frame section size
+    while (headPosition < end) {
+      let parsedTag: parsedTag = {
+        findAt: headPosition,
+        header: {
+          marker: '',
+          size: 0,
+          flags: [],
+        },
+        data: {},
+      };
+      parsedTag.header.marker = this.bin2String(
+        this.rangeParse(
+          buffer,
+          headPosition,
+          headPosition + frames.header.marker
+        )
+      );
+      headPosition += frames.header.marker;
+
+      parsedTag.header.size = this.calcTagSize(
+        this.bin2Base2(
+          this.rangeParse(
+            buffer,
+            headPosition,
+            headPosition + frames.header.size
+          )
+        )
+      );
+      headPosition += frames.header.size;
+
+      parsedTag.header.flags = [
+        ...this.bin2Base2(
+          this.rangeParse(
+            buffer,
+            headPosition,
+            headPosition + frames.header.flags
+          )
+        ),
+      ];
+      headPosition += frames.header.flags;
+
+      let innerHeadPosition = parsedTag.header.size; //As we now know frame size, we can countdown it
+      let frameSchema = frames.tags[parsedTag.header.marker];
+      if (failCount > 3) {
+        console.log('Failed to parse further');
+        return parsedResult;
+      }
+      if (frameSchema) {
+        Object.keys(frameSchema.data).forEach((subdivision) => {
+          switch (frameSchema.data[subdivision].type) {
+            case 'defined': {
+              parsedTag.data[subdivision].format =
+                frameSchema.data[subdivision].parseTo!;
+              parsedTag.data[subdivision].payload = this.dynamicConvert(
+                this.rangeParse(
+                  buffer,
+                  headPosition,
+                  headPosition + <number>frameSchema.data[subdivision].size
+                ),
+                frameSchema.data[subdivision].parseTo!
+              );
+              console.log(
+                'defined result',
+                'of subdivision',
+                subdivision,
+                ':',
+                parsedTag.data[subdivision]
+              );
+              headPosition += <number>frameSchema.data[subdivision].size;
+              innerHeadPosition -= <number>frameSchema.data[subdivision].size;
+              return;
+            }
+            case 'terminated': {
+              let terminatedTextInBytes = this.readUntilHexSymbol(
+                buffer,
+                headPosition
+              );
+              let terminatedText = this.bin2String(terminatedTextInBytes);
+              parsedTag.data[subdivision].format = dynamicFormat.String;
+              parsedTag.data[subdivision].payload = terminatedText;
+              console.log(
+                'terminated text result',
+                'of subdivision',
+                subdivision,
+                ':',
+                parsedTag.data[subdivision]
+              );
+              headPosition += terminatedTextInBytes.length;
+              innerHeadPosition -= terminatedTextInBytes.length;
+              return;
+            }
+            case 'table': {
+              let headerBytes = this.bin2Base2(
+                this.rangeParse(
+                  buffer,
+                  headPosition,
+                  headPosition +
+                    <number>frameSchema.data[subdivision].headerBytes
+                )
+              );
+
+              headPosition += <number>frameSchema.data[subdivision].headerBytes;
+              innerHeadPosition -= <number>(
+                frameSchema.data[subdivision].headerBytes
+              );
+
+              console.log('table header bytes', headerBytes);
+              let tableFlags = headerBytes[0];
+              headerBytes.shift();
+              let tableSize = this.calcTagSize(headerBytes);
+              console.log(
+                'calculated table header',
+                tableFlags,
+                'size',
+                tableSize
+              );
+              parsedTag.data[subdivision].format = dynamicFormat.Dynamic;
+              parsedTag.data[subdivision].payload = this.bin2Hex(
+                this.rangeParse(buffer, headPosition, headPosition + tableSize)
+              );
+
+              innerHeadPosition -= tableSize;
+              headPosition += tableSize;
+
+              console.log(
+                'table result',
+                'of subdivision',
+                subdivision,
+                ':',
+                parsedTag.data[subdivision]
+              );
+              return;
+            }
+
+            //Always last - countdown to the end of InnerHeadPosition
+            case 'list': {
+              while (innerHeadPosition > 0) {
+                let parsedStructure: ListEntry = {};
+                Object.keys(frameSchema.data[subdivision].structure!).forEach(
+                  (structureEntry) => {
+                    let value = this.rangeParse(
+                      buffer,
+                      headPosition,
+                      headPosition +
+                        frameSchema.data[subdivision].structure![structureEntry]
+                          .size
+                    );
+                    parsedStructure[structureEntry].parseTo =
+                      frameSchema.data[subdivision].structure![
+                        structureEntry
+                      ].parseTo;
+                    parsedStructure[structureEntry].value = this.dynamicConvert(
+                      value,
+                      parsedStructure[structureEntry].parseTo
+                    );
+                  }
+                );
+                console.log('parsedStructure', parsedStructure);
+                parsedTag.data[subdivision].format = dynamicFormat.Dynamic;
+                parsedTag.data[subdivision].payload = parsedStructure;
+              }
+              return;
+            }
+            case 'textfield': {
+              parsedTag.data[subdivision].format = dynamicFormat.String;
+              parsedTag.data[subdivision].payload = this.bin2String(
+                this.rangeParse(
+                  buffer,
+                  headPosition,
+                  headPosition + innerHeadPosition
+                )
+              );
+              headPosition += innerHeadPosition;
+              console.log(
+                'textfield result',
+                'of subdivision',
+                subdivision,
+                ':',
+                parsedTag.data[subdivision]
+              );
+              return;
+            }
+          }
+        });
+        parsedResult[parsedTag.header.marker] = parsedTag;
+      } else {
+        console.log(
+          'Schema named',
+          parsedTag.header.marker,
+          'not recognized:',
+          frameSchema,
+          'from',
+          frames.tags
+        );
+        failCount++;
+      }
+    }
+    console.log('final parsed result', parsedResult);
+    return parsedResult;
+  }
   private frameSearchParse(
     buffer: ArrayBuffer,
     frames: SchemaFrameEntry,
@@ -247,7 +456,7 @@ export class ByteParser {
             let parsedTableEntry = {
               format: 'Bytes',
               payload: <parsedValue>'',
-            }; //Initially filled with default values
+            };
             switch (frameSchema.data[subdivision].type) {
               case 'defined': {
                 parsedTableEntry.format =
@@ -347,99 +556,14 @@ export class ByteParser {
                   let parsedStructure: ListEntry = {};
                   Object.keys(frameSchema.data[subdivision].structure!).forEach(
                     (structureEntry) => {
-                      let value: number[] = [];
-                      switch (
-                        typeof frameSchema.data[subdivision].structure![
-                          structureEntry
-                        ].size
-                      ) {
-                        case 'string': {
-                          if (
-                            (<string>(
-                              frameSchema.data[subdivision].structure![
-                                structureEntry
-                              ].size
-                            )).charAt(0) === '%'
-                          ) {
-                            let sizeReference = (<string>(
-                              frameSchema.data[subdivision].structure![
-                                structureEntry
-                              ].size
-                            )).substring(1);
-                            let sizeValue =
-                              parsedTag.data[sizeReference].payload;
-                            let sizeFormat =
-                              parsedTag.data[sizeReference].format;
-                            if (sizeValue && sizeFormat) {
-                              if (sizeFormat === dynamicFormat.Number) {
-                                value = this.rangeParse(
-                                  buffer,
-                                  headPosition,
-                                  headPosition + <number>sizeValue
-                                );
-                                headPosition += <number>sizeValue;
-                                innerHeadPosition -= <number>sizeValue;
-                                console.log(
-                                  'Got referenced size value',
-                                  value,
-                                  'by reference:',
-                                  sizeReference
-                                );
-                              } else {
-                                console.log('Referenced size is not a number');
-                                break;
-                              }
-                            } else {
-                              console.log(
-                                'Referenced size undefined or not parsed yet'
-                              );
-                              break;
-                            }
-                          } else {
-                            console.log(
-                              'Incorrect size placeholder identifier, skipping'
-                            );
-                            break;
-                          }
-                          break;
-                        }
-                        case 'number': {
-                          value = this.rangeParse(
-                            buffer,
-                            headPosition,
-                            headPosition +
-                              <number>(
-                                frameSchema.data[subdivision].structure![
-                                  structureEntry
-                                ].size
-                              )
-                          );
-                          innerHeadPosition -= <number>(
-                            frameSchema.data[subdivision].structure![
-                              structureEntry
-                            ].size
-                          );
-                          headPosition += <number>(
-                            frameSchema.data[subdivision].structure![
-                              structureEntry
-                            ].size
-                          );
-                          break;
-                        }
-                        default: {
-                          console.log(
-                            'Incorrect list structure size reference format, skipping tag with binary dump'
-                          );
-                          value = this.rangeParse(
-                            buffer,
-                            headPosition,
-                            headPosition + innerHeadPosition
-                          );
-                          headPosition += innerHeadPosition;
-                          innerHeadPosition = 0;
-                          break;
-                        }
-                      }
+                      let value = this.rangeParse(
+                        buffer,
+                        headPosition,
+                        headPosition +
+                          frameSchema.data[subdivision].structure![
+                            structureEntry
+                          ].size
+                      );
                       parsedStructure[structureEntry].parseTo =
                         frameSchema.data[subdivision].structure![
                           structureEntry
