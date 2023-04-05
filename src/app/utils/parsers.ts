@@ -78,7 +78,6 @@ interface frameTagSubdivision {
   refStructure?: {
     [key: string]: {
       sizeRef: string;
-      parseTo: string;
     };
   };
 }
