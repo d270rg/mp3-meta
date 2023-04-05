@@ -725,6 +725,7 @@ export const ID3v2_4 = {
           },
           LeadOut: {
             type: 'defined',
+            parseTo: 'hex',
             size: 8,
           },
         },
@@ -809,6 +810,69 @@ export const ID3v2_4 = {
                 sizeRef: 'BitsForMsDeviation',
               },
             },
+          },
+        },
+      },
+      USLT: {
+        data: {
+          TextEncoding: {
+            type: 'defined',
+            parseTo: 'hex',
+            size: 1,
+          },
+          Language: {
+            type: 'defined',
+            parseTo: 'string',
+            size: 3,
+          },
+          TimeStampFormat: {
+            type: 'defined',
+            parseTo: 'hex',
+            size: 1,
+          },
+          ContentType: {
+            type: 'defined',
+            parseTo: 'hex',
+            size: 1,
+          },
+          ContentDescriptor: {
+            type: 'terminated',
+            terminator: '00',
+          },
+          Lyrics: {
+            type: 'textfield',
+          },
+        },
+      },
+      SYLT: {
+        data: {
+          TextEncoding: {
+            type: 'defined',
+            parseTo: 'hex',
+            size: 1,
+          },
+          Language: {
+            type: 'defined',
+            parseTo: 'string',
+            size: 3,
+          },
+          TimeStampFormat: {
+            type: 'defined',
+            parseTo: 'hex',
+            size: 1,
+          },
+          ContentType: {
+            type: 'defined',
+            parseTo: 'hex',
+            size: 1,
+          },
+          ContentDescriptor: {
+            type: 'terminated',
+            terminator: '00',
+          },
+          SyncLyrics: {
+            type: 'terminatedTextfield',
+            dividerSize: 2,
           },
         },
       },

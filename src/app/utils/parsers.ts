@@ -15,14 +15,10 @@ enum subdivisionsFormat {
   Textfield = 'textfield',
   Table = 'table',
   List = 'list',
+  TableList = 'tableList',
+  TerminatedTextField = 'terminatedTextfield',
 }
-type parsedValue =
-  | number
-  | string
-  | string[]
-  | number[]
-  | ListEntry
-  | ListEntry[];
+type parsedValue = number | string | string[] | number[] | Object | Object[];
 interface ListEntry {
   [key: string]: {
     value: parsedValue;
@@ -61,25 +57,30 @@ interface frameTagHeader {
 }
 interface frameTagSubdivision {
   type: string;
-  parseTo?: string; //for 'defined'
-  terminator?: string; //for 'terminated'
-  size?: number; //for 'defined'
+  //for 'defined'
+  parseTo?: string;
+  //for 'terminated'
+  terminator?: string;
+  //for 'defined',
+  size?: number; //size in bytes
   //for 'table'
-  rowSize?: number;
+  rowSize?: number; //size in bytes
   headerBytes?: number;
   //for 'list'
   structure?: {
     [key: string]: {
-      size: number;
+      size: number; //size in bytes
       parseTo: string;
     };
   };
   //for 'tableList'
   refStructure?: {
     [key: string]: {
-      sizeRef: string;
+      sizeRef: string; //ref to size in bits
     };
   };
+  //for 'terminatedTextfield'
+  dividerSize?: number; //divider size in bytes
 }
 interface SchemaFrameEntry {
   header: frameTagHeader;
@@ -352,6 +353,37 @@ export class ByteParser {
                 break;
               }
               //Always last - countdown to the end of InnerHeadPosition
+              case 'terminatedTextfield': {
+                let resultArr: { text: string; divider: string | number }[] =
+                  [];
+                while (innerHeadPosition > 0) {
+                  let terminatedTextInBytes = this.readUntilHexSymbol(
+                    buffer,
+                    headPosition
+                  );
+                  let text = this.bin2FilteredString(terminatedTextInBytes);
+                  innerHeadPosition -= terminatedTextInBytes.length + 1; //1 byte for terminator symbol
+                  headPosition += terminatedTextInBytes.length + 1; //1 byte for terminator symbol
+                  let divider = this.bin2Number(
+                    this.rangeParse(
+                      buffer,
+                      headPosition,
+                      headPosition + frameSchema.data[subdivision].dividerSize!
+                    )
+                  );
+                  innerHeadPosition -=
+                    frameSchema.data[subdivision].dividerSize!;
+                  headPosition += frameSchema.data[subdivision].dividerSize!;
+
+                  resultArr.push({
+                    text: text,
+                    divider: divider,
+                  });
+                }
+                parsedTableEntry.format = dynamicFormat.Dynamic;
+                parsedTableEntry.payload = resultArr;
+                break;
+              }
               case 'tableList': {
                 let resultArr = [];
                 while (innerHeadPosition > 0) {
@@ -605,6 +637,7 @@ export class ByteParser {
     return this.getContents(buffer, start, end);
   }
   private readUntilHexSymbol(buffer: ArrayBuffer, start: number): number[] {
+    //Doesn't include terminator byte in final array
     let resultArr: number[] = [];
     let dataView = new DataView(buffer);
     let counter = start;
