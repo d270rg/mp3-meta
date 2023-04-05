@@ -13,6 +13,7 @@ enum subdivisionsFormat {
   Defined = 'defined',
   Terminated = 'terminated',
   Textfield = 'textfield',
+  Bytefield = 'bytefield',
   Table = 'table',
   List = 'list',
   TableList = 'tableList',
@@ -475,6 +476,23 @@ export class ByteParser {
                   parsedTableEntry.format = dynamicFormat.Dynamic;
                   parsedTableEntry.payload = resultArr;
                 }
+                break;
+              }
+              case 'bytefield': {
+                parsedTableEntry.format = dynamicFormat.Bytes;
+                parsedTableEntry.payload = this.rangeParse(
+                  buffer,
+                  headPosition,
+                  headPosition + innerHeadPosition
+                );
+                headPosition += innerHeadPosition;
+                console.log(
+                  'textfield result',
+                  'of subdivision',
+                  subdivision,
+                  ':',
+                  parsedTableEntry
+                );
                 break;
               }
               case 'textfield': {

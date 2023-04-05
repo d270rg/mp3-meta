@@ -876,6 +876,18 @@ export const ID3v2_4 = {
           },
         },
       },
+      SYTC: {
+        data: {
+          Timestamp: {
+            type: 'defined',
+            parseTo: 'hex',
+            size: 1,
+          },
+          TempoData: {
+            type: 'bytefield',
+          },
+        },
+      },
     },
   },
 };
