@@ -691,34 +691,42 @@ export const ID3v2_4 = {
             structure: {
               TrackNumber: {
                 size: 1,
+                sizeInBits: false,
                 parseTo: 'syncedNumber',
               },
               MinutesStart: {
                 size: 1,
+                sizeInBits: false,
                 parseTo: 'syncedNumber',
               },
               SecondsStart: {
                 size: 1,
+                sizeInBits: false,
                 parseTo: 'syncedNumber',
               },
               FramesStart: {
                 size: 1,
+                sizeInBits: false,
                 parseTo: 'syncedNumber',
               },
               MinutesEnd: {
                 size: 1,
+                sizeInBits: false,
                 parseTo: 'syncedNumber',
               },
               SecondsEnd: {
                 size: 1,
+                sizeInBits: false,
                 parseTo: 'syncedNumber',
               },
               FramesEnd: {
                 size: 1,
+                sizeInBits: false,
                 parseTo: 'syncedNumber',
               },
               ReservedZeros: {
                 size: 1,
+                sizeInBits: false,
                 parseTo: 'hex',
               },
             },
@@ -741,11 +749,13 @@ export const ID3v2_4 = {
             structure: {
               EventType: {
                 size: 1,
+                sizeInBits: false,
                 parseTo: 'hex',
               },
               Timestamp: {
                 size: 4,
-                parseTo: 'syncedNumber',
+                sizeInBits: false,
+                parseTo: 'number',
               },
             },
           },
@@ -769,6 +779,50 @@ export const ID3v2_4 = {
           },
           Text: {
             type: 'textfield',
+          },
+        },
+      },
+      MLLT: {
+        data: {
+          MPEGFramesBetweenReference: {
+            type: 'defined',
+            parseTo: 'number',
+            size: 2,
+          },
+          BytesBetweenReference: {
+            type: 'defined',
+            parseTo: 'number',
+            size: 3,
+          },
+          MsBetweenReference: {
+            type: 'defined',
+            parseTo: 'number',
+            size: 3,
+          },
+          BitsForBytesDeviation: {
+            type: 'defined',
+            parseTo: 'number',
+            size: 1,
+          },
+          BitsForMsDeviation: {
+            type: 'defined',
+            parseTo: 'number',
+            size: 1,
+          },
+          DeviationList: {
+            type: 'list',
+            structure: {
+              DeviationInBytes: {
+                size: '%BitsForBytesDeviation',
+                sizeInBits: true,
+                parseTo: 'number',
+              },
+              DeviationInMs: {
+                size: '%BitsForMsDeviation',
+                sizeInBits: true,
+                parseTo: 'number',
+              },
+            },
           },
         },
       },
