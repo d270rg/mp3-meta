@@ -6,6 +6,7 @@ enum dynamicFormat {
   Number = 'number',
   SyncedNumber = 'syncedNumber',
   String = 'string',
+  Date = 'date',
   FilteredString = 'filteredString',
   Dynamic = 'dynamic',
 }
@@ -14,10 +15,17 @@ enum subdivisionsFormat {
   Terminated = 'terminated',
   Textfield = 'textfield',
   Bytefield = 'bytefield',
+  Bitfield = 'bitfield',
   Table = 'table',
   List = 'list',
-  TableList = 'tableList',
+  BitList = 'bitList',
   TerminatedTextField = 'terminatedTextfield',
+}
+interface Date {
+  year: string;
+  month: string;
+  day: string;
+  unparsedData: string;
 }
 type parsedValue = number | string | string[] | number[] | Object | Object[];
 interface ListEntry {
@@ -70,11 +78,16 @@ interface frameTagSubdivision {
   //for 'list'
   structure?: {
     [key: string]: {
-      size: number; //size in bytes
+      size?: number; //size in bytes
+      sizeRef?: {
+        //if size not present
+        ref: string;
+        refInRoundedBits: boolean;
+      };
       parseTo: string;
     };
   };
-  //for 'tableList'
+  //for 'bitList'
   refStructure?: {
     [key: string]: {
       sizeRef: string; //ref to size in bits
@@ -385,7 +398,7 @@ export class ByteParser {
                 parsedTableEntry.payload = resultArr;
                 break;
               }
-              case 'tableList': {
+              case 'bitList': {
                 let resultArr = [];
                 while (innerHeadPosition > 0) {
                   let parsedStructure: ListEntry = {};
@@ -446,13 +459,40 @@ export class ByteParser {
                   let parsedStructure: ListEntry = {};
                   Object.keys(frameSchema.data[subdivision].structure!).forEach(
                     (structureEntry) => {
+                      let size = 0;
+                      if (
+                        frameSchema.data[subdivision].structure![
+                          structureEntry
+                        ].hasOwnProperty('sizeRef')
+                      ) {
+                        let sizeRef =
+                          frameSchema.data[subdivision].structure![
+                            structureEntry
+                          ].sizeRef!.ref;
+                        if (
+                          frameSchema.data[subdivision].structure![
+                            structureEntry
+                          ].sizeRef!.refInRoundedBits
+                        ) {
+                          size = Math.ceil(
+                            frameSchema.data[subdivision].structure![sizeRef]
+                              .size! / 8
+                          );
+                        } else {
+                          size =
+                            frameSchema.data[subdivision].structure![sizeRef]
+                              .size!;
+                        }
+                      } else {
+                        size =
+                          frameSchema.data[subdivision].structure![
+                            structureEntry
+                          ].size!;
+                      }
                       let value = this.rangeParse(
                         buffer,
                         headPosition,
-                        headPosition +
-                          frameSchema.data[subdivision].structure![
-                            structureEntry
-                          ].size
+                        headPosition + size
                       );
                       parsedStructure[structureEntry].parseTo =
                         frameSchema.data[subdivision].structure![
@@ -463,12 +503,8 @@ export class ByteParser {
                           value,
                           parsedStructure[structureEntry].parseTo
                         );
-                      innerHeadPosition -=
-                        frameSchema.data[subdivision].structure![structureEntry]
-                          .size;
-                      headPosition +=
-                        frameSchema.data[subdivision].structure![structureEntry]
-                          .size;
+                      innerHeadPosition -= size;
+                      headPosition += size;
                     }
                   );
                   console.log('parsedStructure', parsedStructure);
@@ -484,6 +520,25 @@ export class ByteParser {
                   buffer,
                   headPosition,
                   headPosition + innerHeadPosition
+                );
+                headPosition += innerHeadPosition;
+                console.log(
+                  'textfield result',
+                  'of subdivision',
+                  subdivision,
+                  ':',
+                  parsedTableEntry
+                );
+                break;
+              }
+              case 'bitfield': {
+                parsedTableEntry.format = dynamicFormat.Bits;
+                parsedTableEntry.payload = this.bin2Base2(
+                  this.rangeParse(
+                    buffer,
+                    headPosition,
+                    headPosition + innerHeadPosition
+                  )
                 );
                 headPosition += innerHeadPosition;
                 console.log(
@@ -573,7 +628,7 @@ export class ByteParser {
   private dynamicConvert(
     uint8Array: number[],
     parseTo: string
-  ): Array<string> | Array<number> | string | number {
+  ): Array<string> | Array<number> | string | number | Date {
     switch (parseTo) {
       case dynamicFormat.Hex: {
         return this.bin2Hex(uint8Array);
@@ -596,11 +651,28 @@ export class ByteParser {
       case dynamicFormat.Number: {
         return this.bin2Number(uint8Array);
       }
+      case dynamicFormat.Date: {
+        return this.bin2Date(uint8Array);
+      }
       default: {
         console.log('Unknown dynamic parse format requested', parseTo);
         return uint8Array;
       }
     }
+  }
+  private bin2Date(uint8Arr: Array<number>): Date {
+    let date = {
+      year: '',
+      month: '',
+      day: '',
+      unparsedData: '',
+    };
+    let dateText = this.bin2String(uint8Arr);
+    date.year = dateText.substring(0, 4);
+    date.month = dateText.substring(4, 6);
+    date.day = dateText.substring(6, 8);
+    date.unparsedData = dateText.substring(8);
+    return date;
   }
   private bin2Base2(uint8Arr: Array<number>): Array<string> {
     return Array.from(uint8Arr, function (byte) {

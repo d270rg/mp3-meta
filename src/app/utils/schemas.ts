@@ -682,6 +682,171 @@ export const ID3v2_4 = {
           },
         },
       },
+      USER: {
+        data: {
+          TextEncoding: {
+            type: 'defined',
+            parseTo: 'hex',
+            size: 1,
+          },
+          Language: {
+            type: 'defined',
+            parseTo: 'string',
+            size: 3,
+          },
+          Text: {
+            type: 'textfield',
+          },
+        },
+      },
+      OWNE: {
+        data: {
+          TextEncoding: {
+            type: 'defined',
+            parseTo: 'hex',
+            size: 1,
+          },
+          PricePaid: {
+            type: 'terminated',
+            terminator: '00',
+          },
+          DateOfPurchase: {
+            type: 'defined',
+            parseTo: 'date',
+            size: 8,
+          },
+          Seller: {
+            type: 'textfield',
+          },
+        },
+      },
+      ENCR: {
+        data: {
+          OwnerID: {
+            type: 'terminated',
+            terminator: '00',
+          },
+          MethodSymbol: {
+            type: 'defined',
+            parseTo: 'string',
+            size: 1,
+          },
+          EncryptionData: {
+            type: 'bytefield',
+          },
+        },
+      },
+      GRID: {
+        data: {
+          OwnerID: {
+            type: 'terminated',
+            terminator: '00',
+          },
+          GroupSymbol: {
+            type: 'defined',
+            parseTo: 'string',
+            size: 1,
+          },
+          GroupDependentData: {
+            type: 'bytefield',
+          },
+        },
+      },
+      PRIV: {
+        data: {
+          OwnerID: {
+            type: 'terminated',
+            terminator: '00',
+          },
+          PrivateData: {
+            type: 'bytefield',
+          },
+        },
+      },
+      //Experimental frames
+      ASPI: {
+        data: {
+          IndexedDataStart: {
+            type: 'defined',
+            parseTo: 'number',
+            size: 4,
+          },
+          IndexedDataLength: {
+            type: 'defined',
+            parseTo: 'number',
+            size: 4,
+          },
+          NumberOfIndexPoints: {
+            type: 'defined',
+            parseTo: 'number',
+            size: 2,
+          },
+          BitsPerIndexPoint: {
+            type: 'defined',
+            parseTo: 'number',
+            size: 1,
+          },
+          FI: {
+            type: 'bitList',
+            refStructure: {
+              Fraction: {
+                sizeRef: 'BitsPerIndexPoint',
+              },
+            },
+          },
+        },
+      },
+      SEEK: {
+        data: {
+          MinOffsetToNextTag: {
+            type: 'defined',
+            parseTo: 'number',
+            size: 4,
+          },
+        },
+      },
+      COMR: {
+        data: {
+          TextEncoding: {
+            type: 'defined',
+            parseTo: 'hex',
+            size: 1,
+          },
+          PriceString: {
+            type: 'terminated',
+            terminator: '00',
+          },
+          ValidUntil: {
+            type: 'defined',
+            parseTo: 'date',
+            size: 8,
+          },
+          ContactURL: {
+            type: 'terminated',
+            terminator: '00',
+          },
+          ReceivedAs: {
+            type: 'defined',
+            parseTo: 'hex',
+            size: 1,
+          },
+          NameOfSeller: {
+            type: 'terminated',
+            terminator: '00',
+          },
+          Description: {
+            type: 'terminated',
+            terminator: '00',
+          },
+          PictureMimeType: {
+            type: 'terminated',
+            terminator: '00',
+          },
+          SellerLogo: {
+            type: 'bytefield',
+          },
+        },
+      },
       MCDI: {
         data: {
           TOC: {
@@ -732,7 +897,7 @@ export const ID3v2_4 = {
       },
       ETCO: {
         data: {
-          TimeStampFo0rmat: {
+          TimeStampFormat: {
             type: 'defined',
             parseTo: 'hex',
             size: 1,
@@ -746,7 +911,7 @@ export const ID3v2_4 = {
               },
               Timestamp: {
                 size: 4,
-                parseTo: 'syncedNumber',
+                parseTo: 'number', //Sync?
               },
             },
           },
@@ -801,7 +966,7 @@ export const ID3v2_4 = {
             size: 1,
           },
           RefList: {
-            type: 'tableList',
+            type: 'bitList',
             refStructure: {
               DeviationInBytes: {
                 sizeRef: 'BitsForByteDeviation',
@@ -885,6 +1050,257 @@ export const ID3v2_4 = {
           },
           TempoData: {
             type: 'bytefield',
+          },
+        },
+      },
+      RVA2: {
+        data: {
+          Identification: {
+            type: 'terminated',
+            terminator: '00',
+          },
+          Channels: {
+            type: 'list',
+            structure: {
+              TypeOfChannel: {
+                size: 1,
+                parseTo: 'hex',
+              },
+              VolumeAdjustment: {
+                size: 2,
+                parseTo: 'hex',
+              },
+              PeakBits: {
+                size: 1,
+                parseTo: 'number',
+              },
+              PeakInfo: {
+                sizeRef: { ref: 'PeakBits', refInRoundedBits: true },
+                parseTo: 'number',
+              },
+            },
+          },
+        },
+      },
+      EQU2: {
+        data: {
+          InterpolationMethod: {
+            type: 'defined',
+            parseTo: 'hex',
+            size: 1,
+          },
+          Identification: {
+            type: 'terminated',
+            terminator: '00',
+          },
+          AdjustmentPoints: {
+            type: 'list',
+            structure: {
+              Frequency: {
+                size: 2,
+                parseTo: 'number',
+              },
+              VolumeAdjustment: {
+                size: 2,
+                parseTo: 'number',
+              },
+            },
+          },
+        },
+      },
+      RVRB: {
+        data: {
+          RevLeftMs: {
+            type: 'defined',
+            parseTo: 'number',
+            size: 2,
+          },
+          RevRightMs: {
+            type: 'defined',
+            parseTo: 'number',
+            size: 2,
+          },
+          RevBouncesLeft: {
+            type: 'defined',
+            parseTo: 'hex',
+            size: 1,
+          },
+          RevBouncesRight: {
+            type: 'defined',
+            parseTo: 'hex',
+            size: 1,
+          },
+          RevFeedbackLtoL: {
+            type: 'defined',
+            parseTo: 'hex',
+            size: 1,
+          },
+          RevFeedbackLtoR: {
+            type: 'defined',
+            parseTo: 'hex',
+            size: 1,
+          },
+          RevFeedbackRtoR: {
+            type: 'defined',
+            parseTo: 'hex',
+            size: 1,
+          },
+          RevFeedbackRtoL: {
+            type: 'defined',
+            parseTo: 'hex',
+            size: 1,
+          },
+          PremixLtoR: {
+            type: 'defined',
+            parseTo: 'hex',
+            size: 1,
+          },
+          PremixRtoL: {
+            type: 'defined',
+            parseTo: 'hex',
+            size: 1,
+          },
+        },
+      },
+      APIC: {
+        data: {
+          TextEncoding: {
+            type: 'defined',
+            parseTo: 'hex',
+            size: 1,
+          },
+          MIME: {
+            type: 'terminated',
+            terminator: '00',
+          },
+          PictureType: {
+            type: 'defined',
+            parseTo: 'hex',
+            size: 1,
+          },
+          Description: {
+            type: 'terminated',
+            terminator: '00',
+          },
+          PictureData: {
+            type: 'bytefield',
+          },
+        },
+      },
+      GEOB: {
+        data: {
+          TextEncoding: {
+            type: 'defined',
+            parseTo: 'hex',
+            size: 1,
+          },
+          MIME: {
+            type: 'terminated',
+            terminator: '00',
+          },
+          Filename: {
+            type: 'terminated',
+            terminator: '00',
+          },
+          Description: {
+            type: 'terminated',
+            terminator: '00',
+          },
+          EncapsulatedObject: {
+            type: 'bytefield',
+          },
+        },
+      },
+      PCNT: {
+        data: {
+          Counter: {
+            type: 'bytefield',
+          },
+        },
+      },
+      POPM: {
+        data: {
+          Email: {
+            type: 'terminated',
+            terminator: '00',
+          },
+          Rating: {
+            type: 'defined',
+            parseTo: 'number',
+            size: 1,
+          },
+          Counter: {
+            type: 'bitfield',
+          },
+        },
+      },
+      RBUF: {
+        data: {
+          bufferSize: {
+            type: 'defined',
+            parseTo: 'number',
+            size: 1,
+          },
+          InfoFlag: {
+            type: 'defined',
+            parseTo: 'bits',
+            size: 1,
+          },
+          Offset: {
+            type: 'defined',
+            parseTo: 'number',
+            size: 4,
+          },
+        },
+      },
+      AENC: {
+        data: {
+          OwnerID: {
+            type: 'terminated',
+            terminator: '00',
+          },
+          PreviewStart: {
+            type: 'defined',
+            parseTo: 'number',
+            size: 2,
+          },
+          PreviewLength: {
+            type: 'defined',
+            parseTo: 'number',
+            size: 2,
+          },
+          EncryptionInfo: {
+            type: 'bitfield',
+          },
+        },
+      },
+      LINK: {
+        data: {
+          FrameID: {
+            type: 'defined',
+            parseTo: 'string',
+            size: 4,
+          },
+          URL: {
+            type: 'terminated',
+            terminator: '00',
+          },
+          ID: {
+            type: 'textfield',
+          },
+        },
+      },
+      POSS: {
+        data: {
+          TimeStampFormat: {
+            type: 'defined',
+            parseTo: 'hex',
+            size: 1,
+          },
+          Position: {
+            type: 'defined',
+            parseTo: 'number',
+            size: 4, //Sync?
           },
         },
       },
