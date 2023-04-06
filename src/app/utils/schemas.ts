@@ -765,6 +765,7 @@ export const ID3v2_4 = {
       },
       //Experimental frames
       ASPI: {
+        experimental: true,
         data: {
           IndexedDataStart: {
             type: 'defined',
@@ -797,6 +798,7 @@ export const ID3v2_4 = {
         },
       },
       SEEK: {
+        experimental: true,
         data: {
           MinOffsetToNextTag: {
             type: 'defined',
@@ -806,6 +808,7 @@ export const ID3v2_4 = {
         },
       },
       COMR: {
+        experimental: true,
         data: {
           TextEncoding: {
             type: 'defined',
@@ -848,6 +851,7 @@ export const ID3v2_4 = {
         },
       },
       MCDI: {
+        experimental: true,
         data: {
           TOC: {
             type: 'table',
@@ -896,6 +900,7 @@ export const ID3v2_4 = {
         },
       },
       ETCO: {
+        experimental: true,
         data: {
           TimeStampFormat: {
             type: 'defined',
@@ -918,6 +923,7 @@ export const ID3v2_4 = {
         },
       },
       COMM: {
+        experimental: true,
         data: {
           TextEncoding: {
             type: 'defined',
@@ -939,6 +945,7 @@ export const ID3v2_4 = {
         },
       },
       MLLT: {
+        experimental: true,
         data: {
           MPEGFramesBetweenReference: {
             type: 'defined',
@@ -979,6 +986,7 @@ export const ID3v2_4 = {
         },
       },
       USLT: {
+        experimental: true,
         data: {
           TextEncoding: {
             type: 'defined',
@@ -1010,6 +1018,7 @@ export const ID3v2_4 = {
         },
       },
       SYLT: {
+        experimental: true,
         data: {
           TextEncoding: {
             type: 'defined',
@@ -1042,6 +1051,7 @@ export const ID3v2_4 = {
         },
       },
       SYTC: {
+        experimental: true,
         data: {
           Timestamp: {
             type: 'defined',
@@ -1054,6 +1064,7 @@ export const ID3v2_4 = {
         },
       },
       RVA2: {
+        experimental: true,
         data: {
           Identification: {
             type: 'terminated',
@@ -1083,6 +1094,7 @@ export const ID3v2_4 = {
         },
       },
       EQU2: {
+        experimental: true,
         data: {
           InterpolationMethod: {
             type: 'defined',
@@ -1109,6 +1121,7 @@ export const ID3v2_4 = {
         },
       },
       RVRB: {
+        experimental: true,
         data: {
           RevLeftMs: {
             type: 'defined',
@@ -1163,6 +1176,7 @@ export const ID3v2_4 = {
         },
       },
       APIC: {
+        experimental: true,
         data: {
           TextEncoding: {
             type: 'defined',
@@ -1188,6 +1202,7 @@ export const ID3v2_4 = {
         },
       },
       GEOB: {
+        experimental: true,
         data: {
           TextEncoding: {
             type: 'defined',
@@ -1212,6 +1227,7 @@ export const ID3v2_4 = {
         },
       },
       PCNT: {
+        experimental: true,
         data: {
           Counter: {
             type: 'bytefield',
@@ -1219,6 +1235,7 @@ export const ID3v2_4 = {
         },
       },
       POPM: {
+        experimental: true,
         data: {
           Email: {
             type: 'terminated',
@@ -1235,6 +1252,7 @@ export const ID3v2_4 = {
         },
       },
       RBUF: {
+        experimental: true,
         data: {
           bufferSize: {
             type: 'defined',
@@ -1254,6 +1272,7 @@ export const ID3v2_4 = {
         },
       },
       AENC: {
+        experimental: true,
         data: {
           OwnerID: {
             type: 'terminated',
@@ -1275,6 +1294,7 @@ export const ID3v2_4 = {
         },
       },
       LINK: {
+        experimental: true,
         data: {
           FrameID: {
             type: 'defined',
@@ -1291,6 +1311,7 @@ export const ID3v2_4 = {
         },
       },
       POSS: {
+        experimental: true,
         data: {
           TimeStampFormat: {
             type: 'defined',

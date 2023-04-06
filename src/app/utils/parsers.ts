@@ -100,6 +100,7 @@ interface SchemaFrameEntry {
   header: frameTagHeader;
   tags: {
     [tagName: string]: {
+      experimental?: boolean;
       data: {
         [tagSubdivision: string]: frameTagSubdivision;
       };
@@ -119,6 +120,7 @@ interface parsedFrameTagSubdivision {
 interface parsedTag {
   findAt: number;
   header: parsedFrameTagHeader;
+  experimental: boolean;
   data: {
     [tagSubdivision: string]: parsedFrameTagSubdivision;
   };
@@ -227,6 +229,7 @@ export class ByteParser {
         let headPosition = start + tagPos;
         let parsedTag: parsedTag = {
           findAt: start + tagPos,
+          experimental: false,
           header: {
             marker: '',
             size: 0,
@@ -234,6 +237,7 @@ export class ByteParser {
           },
           data: {},
         };
+        //Parsing main data
         parsedTag.header.marker = this.bin2String(
           this.rangeParse(
             buffer,
@@ -269,6 +273,13 @@ export class ByteParser {
         let innerHeadPosition = parsedTag.header.size; //As we now know frame size, we can countdown it
         let frameSchema = frames.tags[parsedTag.header.marker];
         if (frameSchema) {
+          //Setting flags
+          if (frameSchema.hasOwnProperty('experimental')) {
+            if (frameSchema.experimental) {
+              parsedTag.experimental = true;
+            }
+          }
+          //Parsing tag body
           Object.keys(frameSchema.data).forEach((subdivision) => {
             let parsedTableEntry = {
               format: 'Bytes',
