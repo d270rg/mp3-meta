@@ -691,7 +691,7 @@ export const ID3v2_4 = {
           },
           Language: {
             type: 'defined',
-            parseTo: 'string',
+            parseTo: 'filteredString',
             size: 3,
           },
           Text: {
@@ -987,7 +987,7 @@ export const ID3v2_4 = {
           },
           Language: {
             type: 'defined',
-            parseTo: 'string',
+            parseTo: 'filteredString',
             size: 3,
           },
           TimeStampFormat: {
@@ -1018,7 +1018,7 @@ export const ID3v2_4 = {
           },
           Language: {
             type: 'defined',
-            parseTo: 'string',
+            parseTo: 'filteredString',
             size: 3,
           },
           TimeStampFormat: {
