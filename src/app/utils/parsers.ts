@@ -297,13 +297,6 @@ export class ByteParser {
                   ),
                   frameSchema.data[subdivision].parseTo!
                 );
-                console.log(
-                  'defined result',
-                  'of subdivision',
-                  subdivision,
-                  ':',
-                  parsedTableEntry
-                );
                 headPosition += <number>frameSchema.data[subdivision].size;
                 innerHeadPosition -= <number>frameSchema.data[subdivision].size;
                 break;
@@ -318,13 +311,6 @@ export class ByteParser {
                 );
                 parsedTableEntry.format = dynamicFormat.String;
                 parsedTableEntry.payload = terminatedText;
-                console.log(
-                  'terminated text result',
-                  'of subdivision',
-                  subdivision,
-                  ':',
-                  parsedTableEntry
-                );
                 headPosition += terminatedTextInBytes.length;
                 innerHeadPosition -= terminatedTextInBytes.length;
                 break;
@@ -338,24 +324,15 @@ export class ByteParser {
                       <number>frameSchema.data[subdivision].headerBytes
                   )
                 );
-
                 headPosition += <number>(
                   frameSchema.data[subdivision].headerBytes
                 );
                 innerHeadPosition -= <number>(
                   frameSchema.data[subdivision].headerBytes
                 );
-
-                console.log('table header bytes', headerBytes);
                 let tableFlags = headerBytes[0];
                 headerBytes.shift();
                 let tableSize = this.calcTagSize(headerBytes);
-                console.log(
-                  'calculated table header',
-                  tableFlags,
-                  'size',
-                  tableSize
-                );
                 parsedTableEntry.format = dynamicFormat.Dynamic;
                 parsedTableEntry.payload = this.bin2Hex(
                   this.rangeParse(
@@ -364,17 +341,8 @@ export class ByteParser {
                     headPosition + tableSize
                   )
                 );
-
                 innerHeadPosition -= tableSize;
                 headPosition += tableSize;
-
-                console.log(
-                  'table result',
-                  'of subdivision',
-                  subdivision,
-                  ':',
-                  parsedTableEntry
-                );
                 break;
               }
               //Always last - countdown to the end of InnerHeadPosition
@@ -435,7 +403,6 @@ export class ByteParser {
                       console.log('Referenced size is not a number!');
                     }
                   });
-                  console.log('TableList entry size in bytes:', recordSize / 8);
                   let record = this.bin2Base2(
                     this.rangeParse(
                       buffer,
@@ -518,7 +485,6 @@ export class ByteParser {
                       headPosition += size;
                     }
                   );
-                  console.log('parsedStructure', parsedStructure);
                   resultArr.push(parsedStructure);
                   parsedTableEntry.format = dynamicFormat.Dynamic;
                   parsedTableEntry.payload = resultArr;
@@ -533,13 +499,6 @@ export class ByteParser {
                   headPosition + innerHeadPosition
                 );
                 headPosition += innerHeadPosition;
-                console.log(
-                  'textfield result',
-                  'of subdivision',
-                  subdivision,
-                  ':',
-                  parsedTableEntry
-                );
                 break;
               }
               case 'bitfield': {
@@ -552,13 +511,6 @@ export class ByteParser {
                   )
                 );
                 headPosition += innerHeadPosition;
-                console.log(
-                  'textfield result',
-                  'of subdivision',
-                  subdivision,
-                  ':',
-                  parsedTableEntry
-                );
                 break;
               }
               case 'textfield': {
@@ -571,13 +523,6 @@ export class ByteParser {
                   )
                 );
                 headPosition += innerHeadPosition;
-                console.log(
-                  'textfield result',
-                  'of subdivision',
-                  subdivision,
-                  ':',
-                  parsedTableEntry
-                );
                 break;
               }
             }
@@ -607,7 +552,7 @@ export class ByteParser {
     //Calculates ID3v2 tag size by 4 size bytes
     let cuttedBytes = sizeBytes.map((sizeByte) => {
       return sizeByte.substring(1);
-    }); //cut 1 bit which is always 0
+    }); //cut elder bit which is always 0
     let result = '';
     cuttedBytes.forEach((cuttedByte) => {
       result = result.concat(cuttedByte);
